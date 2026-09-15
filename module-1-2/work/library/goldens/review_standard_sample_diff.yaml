@@ -1,0 +1,66 @@
+id: review_standard_sample_diff
+prompt: code-review-standard
+description: >
+  The lab's sample diff: a DELETE endpoint with f-string SQL, no response_model,
+  and a test that is missing the asyncio marker. The reviewer must catch the
+  injection as a blocker and must not miss the untested path.
+schema: ../validate/review.schema.json
+input: |
+  diff --git a/app/orders/routes.py b/app/orders/routes.py
+  index 1234567..89abcde 100644
+  --- a/app/orders/routes.py
+  +++ b/app/orders/routes.py
+  @@ -32,6 +32,17 @@ async def create_order(req: CreateOrderRequest,
+       await session.commit()
+       return _row_to_order(row)
+
+  +
+  +@router.delete("/{order_id}")
+  +async def delete_order(order_id: int,
+  +                       session: AsyncSession = Depends(get_session)):
+  +    # Quick fix: just delete it
+  +    sql = f"DELETE FROM orders WHERE id = {order_id}"
+  +    await session.execute(sql)
+  +    await session.commit()
+  +    return {"status": "deleted"}
+  +
+  +
+   @router.get("", response_model=list[Order])
+   async def list_orders(user_id: int,
+                         session: AsyncSession = Depends(get_session)) -> list[Order]:
+  diff --git a/tests/integration/test_orders.py b/tests/integration/test_orders.py
+  index abcdef0..fedcba0 100644
+  --- a/tests/integration/test_orders.py
+  +++ b/tests/integration/test_orders.py
+  @@ -38,3 +38,9 @@ async def test_list_orders_filters_by_user(client: AsyncClient) -> None:
+       resp = await client.get("/orders", params={"user_id": 42})
+       assert resp.status_code == 200
+       assert isinstance(resp.json(), list)
+  +
+  +
+  +async def test_delete_order(client: AsyncClient) -> None:
+  +    resp = await client.request("DELETE", "/orders/1")
+  +    assert resp.status_code == 200
+expected_substrings:
+  - "app/orders/routes.py"
+  - "tests/integration/test_orders.py"
+forbidden_substrings:
+  - "```"
+json_checks:
+  issues_count_at_least: 4
+  categories_include: ["security", "testing"]
+  severities_include: ["blocker"]
+  issue_must_match:
+    - file: "app/orders/routes.py"
+      severity: "blocker"
+      category: "security"
+      message_contains: "f-string"
+    - file: "tests/integration/test_orders.py"
+      category: "testing"
+      message_contains: "asyncio"
+prompt_must_contain:
+  - "ONLY a single JSON object"
+  - "review.schema.json"
+  - "string interpolation or f-string"
+  - "integration test"
+  - "Do not speculate"

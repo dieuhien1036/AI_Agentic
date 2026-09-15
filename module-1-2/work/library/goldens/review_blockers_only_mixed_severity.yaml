@@ -1,0 +1,60 @@
+id: review_blockers_only_mixed_severity
+prompt: code-review-blockers-only
+description: >
+  A diff seeded with real blockers AND plenty of nit-bait (a typo in a docstring,
+  an unsorted import, a long line). The merge-gate prompt must surface only
+  blocker/major. Catches severity inflation and noise leaking into the gate.
+schema: ../validate/review.schema.json
+input: |
+  diff --git a/app/orders/routes.py b/app/orders/routes.py
+  index 9999999..aaaaaaa 100644
+  --- a/app/orders/routes.py
+  +++ b/app/orders/routes.py
+  @@ -48,6 +48,26 @@ async def list_orders(user_id: int,
+       rows = await list_orders_for_user(session, user_id=user_id)
+       return [_row_to_order(r) for r in rows]
+  +
+  +import json
+  +from typing import Any
+  +
+  +
+  +@router.get("/by-status")
+  +async def list_by_status(status: str,
+  +                         session: AsyncSession = Depends(get_session)) -> Any:
+  +    """Retrun orders filtered by thier status."""
+  +    sql = "SELECT * FROM orders WHERE status = '" + status + "'"
+  +    rows = await session.execute(sql)
+  +    return json.loads(json.dumps([dict(r) for r in rows], default=str))
+  +
+  +
+  +@router.post("/{order_id}/refund")
+  +async def refund_order(order_id: int, amount: float,
+  +                       session: AsyncSession = Depends(get_session)) -> Any:
+  +    order = await get_order_row(session, order_id=order_id)
+  +    refund = round(amount * 1.0, 2)
+  +    order.total = order.total - refund
+  +    await session.commit()
+  +    return {"refunded": refund}
+expected_substrings:
+  - "BLOCK:"
+forbidden_substrings:
+  - "```"
+  - "\"nit\""
+  - "\"minor\""
+  - "Retrun"
+  - "import order"
+json_checks:
+  issues_count_at_least: 2
+  issues_count_at_most: 5
+  severities_only: ["blocker", "major"]
+  severities_include: ["blocker"]
+  summary_startswith: "BLOCK:"
+  issue_must_match:
+    - severity: "blocker"
+      category: "security"
+      message_contains: "SQL"
+prompt_must_contain:
+  - "ONLY a single JSON object"
+  - "Drop every `minor` and `nit` finding"
+  - "An empty list is a valid, useful answer"
+  - "BLOCK:"

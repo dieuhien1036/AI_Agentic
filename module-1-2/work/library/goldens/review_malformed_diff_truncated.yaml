@@ -1,0 +1,39 @@
+id: review_malformed_diff_truncated
+prompt: code-review-malformed-diff
+description: >
+  The error case. CI truncated the diff mid-hunk and the second file header has
+  no hunk at all. The reviewer must refuse in a structured way rather than
+  hallucinating findings about code it cannot see.
+schema: ../validate/review.schema.json
+input: |
+  diff --git a/app/orders/routes.py b/app/orders/routes.py
+  index ddddddd..eeeeeee 100644
+  --- a/app/orders/routes.py
+  +++ b/app/orders/routes.py
+  @@ -45,12 +45,28 @@ async def list_orders(user_id: int,
+       rows = await list_orders_for_user(session, user_id=user_id)
+       return [_row_to_order(r) for r in rows]
+  +
+  +
+  +@router.post("/{order_id}/cancel", response_model=Order)
+  +async def cancel_order(order_id: int,
+  +                       session: AsyncSession = Depends(get_session)) -> Order:
+  +    row = await get_order_row(session, order_id=order_id)
+  +    if row.status in (OrderStatus.SHIPPED, OrderStatus.CANC
+  ... [truncated: output limit 4096 bytes reached]
+  diff --git a/tests/integration/test_orders.py b/tests/integration/test_orders.py
+expected_substrings:
+  - "MALFORMED_INPUT:"
+forbidden_substrings:
+  - "```"
+  - "\"severity\""
+  - "cancel_order"
+json_checks:
+  issues_count_exactly: 0
+  summary_startswith: "MALFORMED_INPUT:"
+  summary_contains: "truncat"
+prompt_must_contain:
+  - "ONLY a single JSON object"
+  - "MALFORMED_INPUT:"
+  - "Never infer, reconstruct, or guess"
+  - "do not review it"

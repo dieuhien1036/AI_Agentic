@@ -1,0 +1,72 @@
+name: prompt-eval
+
+# Adapted from the lab's starter/ci/eval.yml for this library's layout.
+# Changes from the template:
+#   - added fixtures/** to the path filter: a fixture changing is exactly as much
+#     a reason to re-run as a prompt changing
+#   - added work/validate/** too — it holds review.schema.json, the single source
+#     of truth that both this harness and validate.py load
+#   - added push-to-main so the main branch is never silently red
+#   - pinned the pip install to the two packages the harness actually imports
+#   - added the validator check over runs/*.json alongside the harness
+#   - EVAL_MODE stays offline: CI replays recorded fixtures, never calls a model
+#
+# Path assumption: the LAB repo is the checkout root, so `paths:` filters are
+# written from there while the job's working-directory is work/library. The
+# harness needs ../validate/, which sits outside the library — so if you ever
+# extract work/library/ as its own repository, drop the "work/library/" prefixes
+# below and vendor review.schema.json + validate.py into the library.
+
+on:
+  pull_request:
+    paths:
+      - "work/library/prompts/**"
+      - "work/library/goldens/**"
+      - "work/library/fixtures/**"
+      - "work/library/harness/**"
+      - "work/library/runs/**"
+      - "work/validate/**"
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: work/library
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyyaml jsonschema
+
+      # Offline by default: the harness replays fixtures/, so CI is deterministic
+      # and needs no API key. To run against a live model, implement
+      # call_agent_live() in harness/run_eval.py and set EVAL_MODE=live here.
+      # - name: Set up agent secret
+      #   run: echo "ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}" >> $GITHUB_ENV
+
+      - name: Validate captured runs against the schema
+        run: |
+          for f in runs/*.json; do
+            case "$f" in
+              *_broken.json) continue ;;   # kept on purpose as the repair-flow input
+            esac
+            echo "validating $f"
+            python3 ../validate/validate.py "$f"
+          done
+
+      - name: Run eval harness (strict)
+        env:
+          EVAL_MODE: offline
+        run: python3 harness/run_eval.py --strict -v

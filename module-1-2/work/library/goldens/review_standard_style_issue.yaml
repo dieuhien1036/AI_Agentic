@@ -1,0 +1,49 @@
+id: review_standard_style_issue
+prompt: code-review-standard
+description: >
+  A new pricing module that uses float for money, skips the future-annotations
+  convention, and blows the 100-column limit. Guards against a reviewer that
+  reports the cosmetic line-length issue but misses the money bug underneath it.
+schema: ../validate/review.schema.json
+input: |
+  diff --git a/app/orders/pricing.py b/app/orders/pricing.py
+  new file mode 100644
+  index 0000000..1a2b3c4
+  --- /dev/null
+  +++ b/app/orders/pricing.py
+  @@ -0,0 +1,15 @@
+  +"""Discount helpers for orders."""
+  +
+  +from decimal import Decimal
+  +
+  +from app.types import OrderItem
+  +
+  +
+  +def discount_total(items: list[OrderItem], rate: float) -> float:
+  +    """Return the discounted total for a list of order items."""
+  +    total = 0.0
+  +    for it in items:
+  +        total += float(it.unit_price) * it.quantity
+  +    return round(total * (1.0 - rate), 2)
+  +
+  +DEFAULT_RATE = 0.10  # applied when the caller does not pass a rate; see the pricing runbook for the approval flow
+expected_substrings:
+  - "app/orders/pricing.py"
+forbidden_substrings:
+  - "```"
+json_checks:
+  issues_count_at_least: 3
+  categories_include: ["correctness", "style"]
+  severities_include: ["blocker"]
+  issue_must_match:
+    - file: "app/orders/pricing.py"
+      severity: "blocker"
+      category: "correctness"
+      message_contains: "float"
+    - file: "app/orders/pricing.py"
+      message_contains: "from __future__ import annotations"
+prompt_must_contain:
+  - "ONLY a single JSON object"
+  - "Decimal"
+  - "from __future__ import annotations"
+  - "100 characters"

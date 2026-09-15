@@ -1,0 +1,73 @@
+id: review_clean_diff_no_issues
+prompt: code-review-clean-diff
+description: >
+  The happy path. A diff that follows every repository rule. The correct answer
+  is an empty issues array. This golden exists to catch the most common failure
+  mode of a review prompt: inventing a finding so it looks useful.
+schema: ../validate/review.schema.json
+input: |
+  diff --git a/app/types.py b/app/types.py
+  index aaaaaaa..bbbbbbb 100644
+  --- a/app/types.py
+  +++ b/app/types.py
+  @@ -48,3 +48,8 @@ class TokenResponse(BaseModel):
+       access_token: str
+       token_type: str = "bearer"
+       expires_in: int
+  +
+  +
+  +class OrderCountResponse(BaseModel):
+  +    user_id: int
+  +    count: int
+  diff --git a/app/orders/repository.py b/app/orders/repository.py
+  index ccccccc..ddddddd 100644
+  --- a/app/orders/repository.py
+  +++ b/app/orders/repository.py
+  @@ -38,3 +38,8 @@ async def list_orders_for_user(session: AsyncSession, *, user_id: int) -> list[O
+       stmt = select(OrderRow).where(OrderRow.user_id == user_id)
+       return list((await session.execute(stmt)).scalars())
+  +
+  +
+  +async def count_orders_for_user(session: AsyncSession, *, user_id: int) -> int:
+  +    stmt = select(func.count()).select_from(OrderRow).where(OrderRow.user_id == user_id)
+  +    return int((await session.execute(stmt)).scalar_one())
+  diff --git a/app/orders/routes.py b/app/orders/routes.py
+  index eeeeeee..fffffff 100644
+  --- a/app/orders/routes.py
+  +++ b/app/orders/routes.py
+  @@ -48,3 +48,10 @@ async def list_orders(user_id: int,
+       rows = await list_orders_for_user(session, user_id=user_id)
+       return [_row_to_order(r) for r in rows]
+  +
+  +
+  +@router.get("/count", response_model=OrderCountResponse)
+  +async def count_orders(user_id: int,
+  +                       session: AsyncSession = Depends(get_session)) -> OrderCountResponse:
+  +    total = await count_orders_for_user(session, user_id=user_id)
+  +    return OrderCountResponse(user_id=user_id, count=total)
+  diff --git a/tests/integration/test_orders.py b/tests/integration/test_orders.py
+  index 7777777..8888888 100644
+  --- a/tests/integration/test_orders.py
+  +++ b/tests/integration/test_orders.py
+  @@ -40,3 +40,10 @@ async def test_list_orders_filters_by_user(client: AsyncClient) -> None:
+       assert isinstance(resp.json(), list)
+  +
+  +
+  +@pytest.mark.asyncio
+  +async def test_count_orders_returns_count_for_user(client: AsyncClient) -> None:
+  +    resp = await client.get("/orders/count", params={"user_id": 42})
+  +    assert resp.status_code == 200
+  +    assert resp.json()["user_id"] == 42
+expected_substrings:
+  - "CLEAN:"
+forbidden_substrings:
+  - "```"
+  - "\"severity\""
+json_checks:
+  issues_count_exactly: 0
+  summary_startswith: "CLEAN:"
+prompt_must_contain:
+  - "ONLY a single JSON object"
+  - "empty `issues` array is correct and expected"
+  - "Do not manufacture a finding"
+  - "CLEAN:"

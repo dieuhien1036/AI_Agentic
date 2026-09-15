@@ -1,0 +1,4 @@
+{
+  "issues": [],
+  "summary": "MALFORMED_INPUT: the diff ends mid-hunk. app/orders/routes.py declares @@ -45,12 +45,28 @@ but the payload stops after 6 added lines at a truncation marker, and the second file header has no hunk at all. Re-send the complete diff, or split it so each part stays under the pipe's byte limit."
+}

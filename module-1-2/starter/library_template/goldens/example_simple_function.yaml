@@ -1,0 +1,9 @@
+id: simple_function
+prompt: write-pytest
+input: |
+  def add(a: int, b: int) -> int:
+      return a + b
+expected_substrings:
+  - "def test_"
+  - "assert"
+expected_count_at_least: 2

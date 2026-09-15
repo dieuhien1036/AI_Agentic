@@ -1,0 +1,50 @@
+id: review_security_focus_auth_change
+prompt: code-review-security-focus
+description: >
+  A diff that walks straight into the repository's protected path and weakens
+  three controls at once. The reviewer must block on the protected path itself,
+  name the escalation, and stay inside the security category.
+schema: ../validate/review.schema.json
+input: |
+  diff --git a/app/auth/handlers.py b/app/auth/handlers.py
+  index bbbbbbb..ccccccc 100644
+  --- a/app/auth/handlers.py
+  +++ b/app/auth/handlers.py
+  @@ -22,8 +22,8 @@ router = APIRouter()
+
+   _pwd = CryptContext(schemes=["bcrypt"], deprecated="auto")
+  -_JWT_SECRET = os.environ["JWT_SECRET"]
+  +_JWT_SECRET = os.environ.get("JWT_SECRET", "dev-secret-change-me")
+   _JWT_ALG = "HS256"
+  -_TOKEN_TTL = timedelta(hours=24)
+  +_TOKEN_TTL = timedelta(days=30)
+  @@ -39,6 +39,7 @@ async def login(req: LoginRequest, session: AsyncSession = Depends(get_session))
+       user = await get_user_by_email(session, req.email)
+       if not user or not _pwd.verify(req.password, user.password_hash):
+  +        logger.warning("failed login email=%s password=%s", req.email, req.password)
+           raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid credentials")
+expected_substrings:
+  - "ESCALATE:"
+  - "app/auth/handlers.py"
+  - "security lead"
+forbidden_substrings:
+  - "```"
+json_checks:
+  issues_count_at_least: 3
+  categories_only: ["security"]
+  severities_include: ["blocker"]
+  summary_startswith: "ESCALATE:"
+  issue_must_match:
+    - file: "app/auth/handlers.py"
+      severity: "blocker"
+      message_contains: "protected path"
+    - file: "app/auth/handlers.py"
+      message_contains: "TTL"
+    - file: "app/auth/handlers.py"
+      message_contains: "hardcoded"
+prompt_must_contain:
+  - "ONLY a single JSON object"
+  - "app/auth/"
+  - "ESCALATE:"
+  - "security lead"
+  - "without explicit human approval"

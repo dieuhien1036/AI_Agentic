@@ -1,0 +1,4 @@
+{
+  "issues": [],
+  "summary": "CLEAN: the diff adds a public model to app/types.py, keeps the query in app/orders/repository.py behind a bound parameter, declares response_model= with an annotated return type, starts every touched file with future annotations, stays under 100 columns, adds an integration test under tests/integration/, and leaves migrations/ and app/auth/ untouched."
+}

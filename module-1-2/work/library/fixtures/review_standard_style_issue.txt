@@ -1,0 +1,37 @@
+{
+  "issues": [
+    {
+      "severity": "blocker",
+      "category": "correctness",
+      "file": "app/orders/pricing.py",
+      "line": 12,
+      "message": "discount_total() converts unit_price to float before multiplying. Binary floats cannot represent cents exactly, so order totals drift from the NUMERIC(12,2) column and reconciliation breaks.",
+      "suggestion": "Keep Decimal end to end: total = sum((it.unit_price * it.quantity for it in items), start=Decimal(\"0\")) and apply the rate as Decimal(str(rate))."
+    },
+    {
+      "severity": "major",
+      "category": "style",
+      "file": "app/orders/pricing.py",
+      "line": 1,
+      "message": "New module does not start with `from __future__ import annotations`, which every other Python file in this repository does.",
+      "suggestion": "Add `from __future__ import annotations` as the first statement after the module docstring."
+    },
+    {
+      "severity": "major",
+      "category": "testing",
+      "file": "app/orders/pricing.py",
+      "line": 8,
+      "message": "New pricing logic ships with no test. Rounding rules are exactly the kind of code that silently regresses.",
+      "suggestion": "Add a test covering a half-cent rounding case and a zero-discount case."
+    },
+    {
+      "severity": "minor",
+      "category": "style",
+      "file": "app/orders/pricing.py",
+      "line": 14,
+      "message": "Line is 118 characters; ruff is configured with line-length 100, so `make lint` fails on this line.",
+      "suggestion": "Wrap the expression across two lines."
+    }
+  ],
+  "summary": "Do not merge. Using float for money is a correctness blocker in a payments service; the module also misses the future-annotations convention, the line-length limit, and any test coverage."
+}

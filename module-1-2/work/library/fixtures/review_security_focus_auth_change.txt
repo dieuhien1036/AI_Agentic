@@ -1,0 +1,37 @@
+{
+  "issues": [
+    {
+      "severity": "blocker",
+      "category": "security",
+      "file": "app/auth/handlers.py",
+      "line": 27,
+      "message": "This diff modifies app/auth/, a protected path owned by the security lead. It cannot merge without explicit human review, independent of whether the change itself is sound.",
+      "suggestion": "Move the change to a separate PR and request review from the security lead before merging."
+    },
+    {
+      "severity": "blocker",
+      "category": "security",
+      "file": "app/auth/handlers.py",
+      "line": 27,
+      "message": "Token TTL is raised from 24 hours to 30 days. A stolen or leaked token stays usable for a month, and the service has no revocation list to cut it short.",
+      "suggestion": "Keep _TOKEN_TTL at timedelta(hours=24); if longer sessions are needed, add a refresh token with its own review."
+    },
+    {
+      "severity": "blocker",
+      "category": "security",
+      "file": "app/auth/handlers.py",
+      "line": 25,
+      "message": "The JWT secret is hardcoded as a literal fallback when JWT_SECRET is unset. The value lands in source control and signs tokens that any reader of the repository can forge.",
+      "suggestion": "Restore os.environ[\"JWT_SECRET\"] so the service fails fast instead of starting with a known key."
+    },
+    {
+      "severity": "major",
+      "category": "security",
+      "file": "app/auth/handlers.py",
+      "line": 42,
+      "message": "The failed-login branch now logs req.email together with the submitted password, putting plaintext credentials into application logs.",
+      "suggestion": "Log the email only, or a hash of it; never log the password field."
+    }
+  ],
+  "summary": "ESCALATE: this diff changes app/auth/, a protected path owned by the security lead, and weakens three controls at once (30-day TTL, hardcoded signing key fallback, plaintext password logging). Block until the security lead reviews it."
+}

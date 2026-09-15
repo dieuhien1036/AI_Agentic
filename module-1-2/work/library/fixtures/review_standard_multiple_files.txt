@@ -1,0 +1,37 @@
+{
+  "issues": [
+    {
+      "severity": "blocker",
+      "category": "correctness",
+      "file": "migrations/0001_initial.sql",
+      "line": 28,
+      "message": "An existing migration is edited in place to add the orders.note column. Environments that already applied 0001 will never pick this up, so schema drifts between them.",
+      "suggestion": "Revert this file and add the column in a new migrations/0002_add_order_note.sql instead."
+    },
+    {
+      "severity": "major",
+      "category": "correctness",
+      "file": "app/orders/routes.py",
+      "line": 52,
+      "message": "The OrderNote response model is declared inline in routes.py, but it crosses a module boundary as a public response type.",
+      "suggestion": "Move OrderNote to app/types.py and import it here."
+    },
+    {
+      "severity": "major",
+      "category": "correctness",
+      "file": "app/orders/routes.py",
+      "line": 58,
+      "message": "The new route has no response_model=, so FastAPI emits no schema for it and mypy strict has no return type to check.",
+      "suggestion": "Add response_model=OrderNote and annotate the handler as -> OrderNote."
+    },
+    {
+      "severity": "minor",
+      "category": "testing",
+      "file": "tests/integration/test_orders.py",
+      "line": 51,
+      "message": "The new test asserts the whole response payload by equality, including id and created_at, so it will break on every unrelated run.",
+      "suggestion": "Assert the status code, then only the fields under test."
+    }
+  ],
+  "summary": "Do not merge. The change edits an already-applied migration, which is the repository's append-only rule; the inline public model and missing response_model are smaller but should be fixed in the same pass."
+}

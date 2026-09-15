@@ -1,0 +1,29 @@
+{
+  "issues": [
+    {
+      "severity": "blocker",
+      "category": "security",
+      "file": "app/orders/routes.py",
+      "line": 63,
+      "message": "The status filter is concatenated into the SQL string, so a caller controls the WHERE clause and can read or destroy rows outside their own orders.",
+      "suggestion": "Filter with select(OrderRow).where(OrderRow.status == status) in the repository."
+    },
+    {
+      "severity": "major",
+      "category": "correctness",
+      "file": "app/orders/routes.py",
+      "line": 70,
+      "message": "The refund amount is held as float and rounded with round(), so amounts written to the NUMERIC(12,2) total column are off by a cent on half-way values.",
+      "suggestion": "Use Decimal with quantize(Decimal(\"0.01\"), rounding=ROUND_HALF_UP)."
+    },
+    {
+      "severity": "major",
+      "category": "testing",
+      "file": "app/orders/routes.py",
+      "line": 60,
+      "message": "Two new endpoints are added with no integration test under tests/integration/, so nothing verifies the refund path before it reaches production.",
+      "suggestion": "Add tests for the success path and for a refund larger than the order total."
+    }
+  ],
+  "summary": "BLOCK: the status filter is SQL-injectable, and the refund path handles money as float with no test behind it."
+}

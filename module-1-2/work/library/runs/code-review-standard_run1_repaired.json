@@ -1,0 +1,61 @@
+{
+  "issues": [
+    {
+      "severity": "blocker",
+      "category": "security",
+      "file": "app/orders/routes.py",
+      "line": 40,
+      "message": "SQL is built with an f-string interpolating the path parameter order_id. A crafted order_id injects arbitrary SQL against the orders table.",
+      "suggestion": "Delete through the repository layer with a bound parameter."
+    },
+    {
+      "severity": "major",
+      "category": "correctness",
+      "file": "app/orders/routes.py",
+      "line": 41,
+      "message": "session.execute() is passed a plain str. SQLAlchemy 2.x rejects raw strings, so this endpoint raises ObjectNotExecutableError on every call.",
+      "suggestion": "Use a select()/delete() construct, or wrap the statement in sqlalchemy.text()."
+    },
+    {
+      "severity": "major",
+      "category": "correctness",
+      "file": "app/orders/routes.py",
+      "line": 36,
+      "message": "The route declares no response_model and the handler has no return annotation, so mypy strict fails and the endpoint returns an ad-hoc dict instead of a typed model.",
+      "suggestion": "Add a DeleteOrderResponse model to app/types.py, set response_model=DeleteOrderResponse, and annotate the handler's return type."
+    },
+    {
+      "severity": "major",
+      "category": "correctness",
+      "file": "app/orders/routes.py",
+      "line": 39,
+      "message": "The handler runs persistence logic inline. Routes must delegate to a function in app/orders/repository.py and never touch the ORM or SQL directly.",
+      "suggestion": "Move the delete into app/orders/repository.py as delete_order_row(session, *, order_id: int) -> None."
+    },
+    {
+      "severity": "major",
+      "category": "testing",
+      "file": "tests/integration/test_orders.py",
+      "line": 43,
+      "message": "The new async test is missing the @pytest.mark.asyncio marker used by every other test in this module, so it is collected but never awaited.",
+      "suggestion": "Add @pytest.mark.asyncio directly above the test function."
+    },
+    {
+      "severity": "minor",
+      "category": "testing",
+      "file": "tests/integration/test_orders.py",
+      "line": 45,
+      "message": "The test asserts only the status code. It would pass even if the endpoint deleted the wrong row or returned an empty body.",
+      "suggestion": "Create an order in the test, delete it, assert the response body, then assert a follow-up GET no longer returns it."
+    },
+    {
+      "severity": "nit",
+      "category": "style",
+      "file": "app/orders/routes.py",
+      "line": 39,
+      "message": "The comment \"Quick fix: just delete it\" records intent to skip the repository pattern rather than explaining the code.",
+      "suggestion": "Drop the comment once the delete goes through the repository layer."
+    }
+  ],
+  "summary": "Do not merge. The delete endpoint is SQL-injectable and, as written, cannot execute under SQLAlchemy 2.x; it also bypasses the repository layer and ships an untyped response with a test that never runs."
+}

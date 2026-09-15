@@ -1,0 +1,35 @@
+diff --git a/app/orders/routes.py b/app/orders/routes.py
+index 1234567..89abcde 100644
+--- a/app/orders/routes.py
++++ b/app/orders/routes.py
+@@ -32,6 +32,17 @@ async def create_order(req: CreateOrderRequest,
+     await session.commit()
+     return _row_to_order(row)
+
++
++@router.delete("/{order_id}")
++async def delete_order(order_id: int,
++                       session: AsyncSession = Depends(get_session)):
++    # Quick fix: just delete it
++    sql = f"DELETE FROM orders WHERE id = {order_id}"
++    await session.execute(sql)
++    await session.commit()
++    return {"status": "deleted"}
++
++
+ @router.get("", response_model=list[Order])
+ async def list_orders(user_id: int,
+                       session: AsyncSession = Depends(get_session)) -> list[Order]:
+diff --git a/tests/integration/test_orders.py b/tests/integration/test_orders.py
+index abcdef0..fedcba0 100644
+--- a/tests/integration/test_orders.py
++++ b/tests/integration/test_orders.py
+@@ -38,3 +38,9 @@ async def test_list_orders_filters_by_user(client: AsyncClient) -> None:
+     resp = await client.get("/orders", params={"user_id": 42})
+     assert resp.status_code == 200
+     assert isinstance(resp.json(), list)
++
++
++async def test_delete_order(client: AsyncClient) -> None:
++    resp = await client.request("DELETE", "/orders/1")
++    assert resp.status_code == 200

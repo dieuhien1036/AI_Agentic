@@ -11,11 +11,18 @@
 **Repo used:** `demo-repo/` (continuing from Run 1 — `migrations/` now has
 `0001_initial.sql`, `0002_add_orders_notes.sql`).
 
+**Working directory for every command below:** `work/demo-repo/`, same as Run 1, with the
+script invoked through its installed path.
+
+```
+$ cd work/demo-repo
+```
+
 ---
 
 ## Agent trace
 
-**1. Locate migrations directory.** Same `demo-repo/migrations/`.
+**1. Locate migrations directory.** Same `migrations/`.
 
 **2. Read recent migrations.** `orders.created_at` exists (from `0001_initial.sql`); no
 prior migration touches it.
@@ -46,14 +53,15 @@ extra confirmation gate that `DROP`/`TRUNCATE`/no-`WHERE`-`DELETE` would require
 **6. Run the scaffold script:**
 
 ```
-$ echo "ALTER TABLE orders RENAME COLUMN created_at TO placed_at;" | python3 scripts/scaffold_migration.py \
-    --migrations-dir demo-repo/migrations --name rename_orders_created_at_to_placed_at --body-file -
-CREATED: demo-repo/migrations/0003_rename_orders_created_at_to_placed_at.sql
+$ echo "ALTER TABLE orders RENAME COLUMN created_at TO placed_at;" \
+    | python3 .claude/skills/scaffold-migration/scripts/scaffold_migration.py \
+        --migrations-dir migrations --name rename_orders_created_at_to_placed_at --body-file -
+CREATED: migrations/0003_rename_orders_created_at_to_placed_at.sql
 ```
 
 Exit code: `0`.
 
-**7. Resulting file** (`demo-repo/migrations/0003_rename_orders_created_at_to_placed_at.sql`):
+**7. Resulting file** (`migrations/0003_rename_orders_created_at_to_placed_at.sql`):
 
 ```sql
 -- migrations/0003_rename_orders_created_at_to_placed_at.sql

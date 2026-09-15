@@ -10,12 +10,19 @@
 **Repo used:** `demo-repo/` (fixture repo built for this lab; `migrations/0001_initial.sql`
 defines `users` and `orders`).
 
+**Working directory for every command below:** `work/demo-repo/`. The script is invoked
+through its *installed* path (`.claude/skills/scaffold-migration/scripts/…`), not from the
+source folder — so this run exercises exactly what a user of the installed skill gets.
+
+```
+$ cd work/demo-repo
+```
+
 ---
 
 ## Agent trace
 
-**1. Locate migrations directory.** `demo-repo/migrations/` exists, containing
-`0001_initial.sql`.
+**1. Locate migrations directory.** `migrations/` exists, containing `0001_initial.sql`.
 
 **2. Read the most recent migration to infer current schema.** `0001_initial.sql` shows
 `orders` has `id, user_id, status, total, created_at`. No `notes` column yet — the request
@@ -36,14 +43,15 @@ in the destructive pattern list. Proceed.
 **5. Run the scaffold script**, letting it assign the number:
 
 ```
-$ echo "ALTER TABLE orders ADD COLUMN notes TEXT;" | python3 scripts/scaffold_migration.py \
-    --migrations-dir demo-repo/migrations --name add_orders_notes --body-file -
-CREATED: demo-repo/migrations/0002_add_orders_notes.sql
+$ echo "ALTER TABLE orders ADD COLUMN notes TEXT;" \
+    | python3 .claude/skills/scaffold-migration/scripts/scaffold_migration.py \
+        --migrations-dir migrations --name add_orders_notes --body-file -
+CREATED: migrations/0002_add_orders_notes.sql
 ```
 
 Exit code: `0`.
 
-**6. Resulting file** (`demo-repo/migrations/0002_add_orders_notes.sql`):
+**6. Resulting file** (`migrations/0002_add_orders_notes.sql`):
 
 ```sql
 -- migrations/0002_add_orders_notes.sql
@@ -56,7 +64,7 @@ Exit code: `0`.
 ALTER TABLE orders ADD COLUMN notes TEXT;
 ```
 
-**7. `0001_initial.sql` untouched** — confirmed by `ls demo-repo/migrations/`:
+**7. `0001_initial.sql` untouched** — confirmed by `ls migrations/`:
 `0001_initial.sql`, `0002_add_orders_notes.sql`. Nothing else modified.
 
 ## Final response given to the user

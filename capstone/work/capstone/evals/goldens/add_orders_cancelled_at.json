@@ -1,0 +1,23 @@
+{
+  "id": "add_orders_cancelled_at",
+  "primary": false,
+  "why": "camelCase name and unstated nullability: both must be normalised AND recorded as assumptions.",
+  "input": {
+    "request": "orders need a cancelledAt timestamp so we know when an order was cancelled"
+  },
+  "expect": {
+    "status": "ok",
+    "table": "orders",
+    "column": "cancelled_at",
+    "type": "TIMESTAMPTZ",
+    "nullable": true,
+    "default": null,
+    "slug": "add_orders_cancelled_at"
+  },
+  "assumptions_must_mention": ["cancelled_at", "nullab"],
+  "prompt_must_contain": [
+    "→ `TIMESTAMPTZ`",
+    "converted to lowercase snake_case",
+    "defaulted to nullable"
+  ]
+}

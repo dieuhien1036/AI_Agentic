@@ -1,0 +1,39 @@
+{
+  "case": "orders_discount_float",
+  "mode": "offline",
+  "request": "add column discount_amount FLOAT NOT NULL to orders",
+  "stages": [
+    {
+      "stage": "parse",
+      "output": {
+        "status": "ok",
+        "operation": "add_column",
+        "table": "orders",
+        "column": "discount_amount",
+        "type": "FLOAT",
+        "nullable": false,
+        "default": null,
+        "slug": "add_orders_discount_amount",
+        "request": "add column discount_amount FLOAT NOT NULL to orders",
+        "assumptions": []
+      }
+    },
+    {
+      "stage": "generate",
+      "exit_code": 4,
+      "stdout": "",
+      "stderr": "REFUSED: the spec conflicts with the current schema or a house rule:\n  - 'discount_amount' looks like a money column: type must be NUMERIC(12, 2), got FLOAT\n  - NOT NULL with no DEFAULT on existing table 'orders' fails on any existing row; make it nullable or give it a DEFAULT\nNo file was written."
+    }
+  ],
+  "outcome": {
+    "stopped_at": "generate",
+    "verdict": null,
+    "file": null,
+    "exit_code": 4
+  },
+  "expected": {
+    "stopped_at": "generate",
+    "exit_code": 4
+  },
+  "matched": true
+}

@@ -1,0 +1,1 @@
+{"status": "ok", "operation": "add_column", "table": "orders", "column": "notes", "type": "TEXT", "nullable": true, "default": null, "slug": "add_orders_notes", "request": "Add a notes column to the orders table so support can leave free-text comments on an order. It's optional.", "assumptions": []}

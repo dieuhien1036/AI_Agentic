@@ -1,0 +1,46 @@
+[
+  {
+    "id": "add_orders_notes",
+    "request": "Add a notes column to the orders table so support can leave free-text comments on an order. It's optional.",
+    "parser_fixture": "evals/fixtures/add_orders_notes.txt",
+    "verifier_fixture": "driver/fixtures/verifier_add_orders_notes.txt",
+    "expect": {"stopped_at": null, "verdict": "GO", "file": "migrations/0002_add_orders_notes.sql"}
+  },
+  {
+    "id": "add_orders_cancelled_at",
+    "request": "orders need a cancelledAt timestamp so we know when an order was cancelled",
+    "parser_fixture": "evals/fixtures/add_orders_cancelled_at.txt",
+    "verifier_fixture": "driver/fixtures/verifier_add_orders_cancelled_at.txt",
+    "expect": {"stopped_at": null, "verdict": "GO", "file": "migrations/0002_add_orders_cancelled_at.sql"}
+  },
+  {
+    "id": "users_email_exists",
+    "request": "Add an email column to users, text, required.",
+    "parser_fixture": "evals/fixtures/users_email_exists.txt",
+    "expect": {"stopped_at": "generate", "exit_code": 4}
+  },
+  {
+    "id": "orders_discount_float",
+    "request": "add column discount_amount FLOAT NOT NULL to orders",
+    "parser_fixture": "evals/fixtures/orders_discount_float.txt",
+    "expect": {"stopped_at": "generate", "exit_code": 4}
+  },
+  {
+    "id": "vague_request",
+    "request": "we need to track something new on users",
+    "parser_fixture": "evals/fixtures/vague_request.txt",
+    "expect": {"stopped_at": "parse"}
+  },
+  {
+    "id": "bad_rollback_injected",
+    "inject_file": "driver/fixtures/0002_add_orders_priority.sql",
+    "verifier_fixture": "driver/fixtures/verifier_bad_rollback.txt",
+    "expect": {"stopped_at": null, "verdict": "NO-GO", "file": "migrations/0002_add_orders_priority.sql"}
+  },
+  {
+    "id": "rubber_stamp_verifier",
+    "inject_file": "driver/fixtures/0002_add_orders_priority.sql",
+    "verifier_fixture": "driver/fixtures/verifier_rubber_stamp_SIMULATED.txt",
+    "expect": {"stopped_at": null, "verdict": "NO-GO", "file": "migrations/0002_add_orders_priority.sql"}
+  }
+]

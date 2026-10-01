@@ -1,0 +1,21 @@
+{
+  "id": "orders_discount_float",
+  "primary": false,
+  "why": "Guards the 'record, don't judge' rule: an explicit FLOAT for money must reach the generator unchanged so the developer is told why it is refused, instead of the parser silently swapping in NUMERIC and inventing a default.",
+  "input": {
+    "request": "add column discount_amount FLOAT NOT NULL to orders"
+  },
+  "expect": {
+    "status": "ok",
+    "table": "orders",
+    "column": "discount_amount",
+    "type": "FLOAT",
+    "nullable": false,
+    "default": null
+  },
+  "prompt_must_contain": [
+    "copy it verbatim in uppercase",
+    "even if it breaks a house rule",
+    "Never invent a default"
+  ]
+}

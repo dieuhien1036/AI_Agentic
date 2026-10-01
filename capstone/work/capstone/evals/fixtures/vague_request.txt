@@ -1,0 +1,1 @@
+{"status": "needs_clarification", "request": "we need to track something new on users", "questions": ["What should the new column on users be called?", "What kind of data will it hold (free text, a yes/no flag, a number, a timestamp, ...)?", "Is it required for every user, or optional? If required, what default should existing users get?"], "partial": {"table": "users"}}

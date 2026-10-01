@@ -1,0 +1,1 @@
+{"status": "ok", "operation": "add_column", "table": "orders", "column": "discount_amount", "type": "FLOAT", "nullable": false, "default": null, "slug": "add_orders_discount_amount", "request": "add column discount_amount FLOAT NOT NULL to orders", "assumptions": []}

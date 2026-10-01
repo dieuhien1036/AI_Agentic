@@ -1,0 +1,39 @@
+{
+  "case": "users_email_exists",
+  "mode": "offline",
+  "request": "Add an email column to users, text, required.",
+  "stages": [
+    {
+      "stage": "parse",
+      "output": {
+        "status": "ok",
+        "operation": "add_column",
+        "table": "users",
+        "column": "email",
+        "type": "TEXT",
+        "nullable": false,
+        "default": null,
+        "slug": "add_users_email",
+        "request": "Add an email column to users, text, required.",
+        "assumptions": []
+      }
+    },
+    {
+      "stage": "generate",
+      "exit_code": 4,
+      "stdout": "",
+      "stderr": "REFUSED: the spec conflicts with the current schema or a house rule:\n  - column users.email already exists (TEXT NOT NULL UNIQUE); nothing to add\n  - NOT NULL with no DEFAULT on existing table 'users' fails on any existing row; make it nullable or give it a DEFAULT\nNo file was written."
+    }
+  ],
+  "outcome": {
+    "stopped_at": "generate",
+    "verdict": null,
+    "file": null,
+    "exit_code": 4
+  },
+  "expected": {
+    "stopped_at": "generate",
+    "exit_code": 4
+  },
+  "matched": true
+}

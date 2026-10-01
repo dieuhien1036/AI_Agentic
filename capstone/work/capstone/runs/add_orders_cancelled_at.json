@@ -1,0 +1,153 @@
+{
+  "case": "add_orders_cancelled_at",
+  "mode": "offline",
+  "request": "orders need a cancelledAt timestamp so we know when an order was cancelled",
+  "stages": [
+    {
+      "stage": "parse",
+      "output": {
+        "status": "ok",
+        "operation": "add_column",
+        "table": "orders",
+        "column": "cancelled_at",
+        "type": "TIMESTAMPTZ",
+        "nullable": true,
+        "default": null,
+        "slug": "add_orders_cancelled_at",
+        "request": "orders need a cancelledAt timestamp so we know when an order was cancelled",
+        "assumptions": [
+          "column name converted from cancelledAt to snake_case cancelled_at",
+          "nullability not stated; defaulted to nullable"
+        ]
+      }
+    },
+    {
+      "stage": "generate",
+      "exit_code": 0,
+      "stdout": "CREATED: C:/Users/FSC/AppData/Local/Temp/capstone_psclhiy0/migrations/0002_add_orders_cancelled_at.sql",
+      "stderr": ""
+    },
+    {
+      "stage": "verify",
+      "mechanical": {
+        "file": "C:/Users/FSC/AppData/Local/Temp/capstone_psclhiy0/migrations/0002_add_orders_cancelled_at.sql",
+        "checks": [
+          {
+            "name": "has_rollback_block",
+            "passed": true,
+            "detail": "1 rollback statement(s)"
+          },
+          {
+            "name": "forward_not_destructive",
+            "passed": true,
+            "detail": "none"
+          },
+          {
+            "name": "forward_supported",
+            "passed": true,
+            "detail": "1 statement(s) modelled"
+          },
+          {
+            "name": "forward_changes_schema",
+            "passed": true,
+            "detail": "+ orders.cancelled_at TIMESTAMPTZ"
+          },
+          {
+            "name": "rollback_applies",
+            "passed": true,
+            "detail": "1 statement(s) applied"
+          },
+          {
+            "name": "round_trip",
+            "passed": true,
+            "detail": "schema after rollback == schema before"
+          },
+          {
+            "name": "forward_rerunnable",
+            "passed": true,
+            "detail": "second application is a no-op"
+          },
+          {
+            "name": "rollback_rerunnable",
+            "passed": true,
+            "detail": "second application is a no-op"
+          }
+        ],
+        "forward_diff": [
+          "+ orders.cancelled_at TIMESTAMPTZ"
+        ],
+        "reversible": true
+      },
+      "verifier": {
+        "migration_file": "migrations/0002_add_orders_cancelled_at.sql",
+        "verdict": "GO",
+        "mechanical_check": {
+          "ran": true,
+          "reversible": true,
+          "failed_checks": []
+        },
+        "rule_checks": [
+          {
+            "rule": "naming",
+            "passed": true,
+            "evidence": "0002 follows 0001_initial.sql; slug add_orders_cancelled_at"
+          },
+          {
+            "rule": "one_concern",
+            "passed": true,
+            "evidence": "single ALTER TABLE orders ADD COLUMN cancelled_at"
+          },
+          {
+            "rule": "rollback_exact",
+            "passed": true,
+            "evidence": "-- ALTER TABLE orders DROP COLUMN IF EXISTS cancelled_at;"
+          },
+          {
+            "rule": "idempotent_guards",
+            "passed": true,
+            "evidence": "IF NOT EXISTS on add, IF EXISTS on drop"
+          },
+          {
+            "rule": "safe_on_live_table",
+            "passed": true,
+            "evidence": "nullable; existing (non-cancelled) orders correctly get NULL"
+          },
+          {
+            "rule": "type_rules",
+            "passed": true,
+            "evidence": "TIMESTAMPTZ, matching created_at"
+          },
+          {
+            "rule": "no_destructive_forward",
+            "passed": true,
+            "evidence": "no DROP/TRUNCATE/DELETE in forward SQL"
+          },
+          {
+            "rule": "header_intact",
+            "passed": true,
+            "evidence": "header present; Request line says cancelledAt, column is snake_case cancelled_at as expected"
+          }
+        ],
+        "issues": [
+          {
+            "severity": "warning",
+            "message": "existing orders with status 'cancelled' will have cancelled_at = NULL; a backfill, if wanted, is a separate migration"
+          }
+        ],
+        "summary": "Reversible and compliant; note historic cancelled orders will have no cancelled_at until someone decides on a backfill."
+      },
+      "final": "GO"
+    }
+  ],
+  "outcome": {
+    "stopped_at": null,
+    "verdict": "GO",
+    "file": "migrations/0002_add_orders_cancelled_at.sql"
+  },
+  "expected": {
+    "stopped_at": null,
+    "verdict": "GO",
+    "file": "migrations/0002_add_orders_cancelled_at.sql"
+  },
+  "matched": true
+}

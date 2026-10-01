@@ -1,0 +1,19 @@
+{
+  "id": "users_email_exists",
+  "primary": false,
+  "why": "The parser must NOT reject an already-existing column itself; existence is checked by the generator against the real migrations.",
+  "input": {
+    "request": "Add an email column to users, text, required."
+  },
+  "expect": {
+    "status": "ok",
+    "table": "users",
+    "column": "email",
+    "type": "TEXT",
+    "nullable": false,
+    "default": null
+  },
+  "prompt_must_contain": [
+    "check whether the column already exists"
+  ]
+}

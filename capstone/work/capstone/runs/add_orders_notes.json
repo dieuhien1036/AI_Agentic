@@ -1,0 +1,150 @@
+{
+  "case": "add_orders_notes",
+  "mode": "offline",
+  "request": "Add a notes column to the orders table so support can leave free-text comments on an order. It's optional.",
+  "stages": [
+    {
+      "stage": "parse",
+      "output": {
+        "status": "ok",
+        "operation": "add_column",
+        "table": "orders",
+        "column": "notes",
+        "type": "TEXT",
+        "nullable": true,
+        "default": null,
+        "slug": "add_orders_notes",
+        "request": "Add a notes column to the orders table so support can leave free-text comments on an order. It's optional.",
+        "assumptions": []
+      }
+    },
+    {
+      "stage": "generate",
+      "exit_code": 0,
+      "stdout": "CREATED: C:/Users/FSC/AppData/Local/Temp/capstone_qzcbo18w/migrations/0002_add_orders_notes.sql",
+      "stderr": ""
+    },
+    {
+      "stage": "verify",
+      "mechanical": {
+        "file": "C:/Users/FSC/AppData/Local/Temp/capstone_qzcbo18w/migrations/0002_add_orders_notes.sql",
+        "checks": [
+          {
+            "name": "has_rollback_block",
+            "passed": true,
+            "detail": "1 rollback statement(s)"
+          },
+          {
+            "name": "forward_not_destructive",
+            "passed": true,
+            "detail": "none"
+          },
+          {
+            "name": "forward_supported",
+            "passed": true,
+            "detail": "1 statement(s) modelled"
+          },
+          {
+            "name": "forward_changes_schema",
+            "passed": true,
+            "detail": "+ orders.notes TEXT"
+          },
+          {
+            "name": "rollback_applies",
+            "passed": true,
+            "detail": "1 statement(s) applied"
+          },
+          {
+            "name": "round_trip",
+            "passed": true,
+            "detail": "schema after rollback == schema before"
+          },
+          {
+            "name": "forward_rerunnable",
+            "passed": true,
+            "detail": "second application is a no-op"
+          },
+          {
+            "name": "rollback_rerunnable",
+            "passed": true,
+            "detail": "second application is a no-op"
+          }
+        ],
+        "forward_diff": [
+          "+ orders.notes TEXT"
+        ],
+        "reversible": true
+      },
+      "verifier": {
+        "migration_file": "migrations/0002_add_orders_notes.sql",
+        "verdict": "GO",
+        "mechanical_check": {
+          "ran": true,
+          "reversible": true,
+          "failed_checks": []
+        },
+        "rule_checks": [
+          {
+            "rule": "naming",
+            "passed": true,
+            "evidence": "0002 follows 0001_initial.sql; slug add_orders_notes = add_<table>_<column>"
+          },
+          {
+            "rule": "one_concern",
+            "passed": true,
+            "evidence": "forward SQL is a single ALTER TABLE orders ADD COLUMN"
+          },
+          {
+            "rule": "rollback_exact",
+            "passed": true,
+            "evidence": "-- ALTER TABLE orders DROP COLUMN IF EXISTS notes; drops exactly the added column"
+          },
+          {
+            "rule": "idempotent_guards",
+            "passed": true,
+            "evidence": "ADD COLUMN IF NOT EXISTS / DROP COLUMN IF EXISTS"
+          },
+          {
+            "rule": "safe_on_live_table",
+            "passed": true,
+            "evidence": "notes TEXT is nullable; existing orders rows get NULL"
+          },
+          {
+            "rule": "type_rules",
+            "passed": true,
+            "evidence": "TEXT for free-text notes; not a money, timestamp or JSON column"
+          },
+          {
+            "rule": "no_destructive_forward",
+            "passed": true,
+            "evidence": "only DROP is inside the commented ROLLBACK block"
+          },
+          {
+            "rule": "header_intact",
+            "passed": true,
+            "evidence": "append-only header present; Request line matches orders.notes"
+          }
+        ],
+        "issues": [
+          {
+            "severity": "warning",
+            "message": "app.types.Order and OrderRow do not expose notes yet; that is a separate code change after this migration merges"
+          }
+        ],
+        "summary": "Reversible and rule-compliant: round-trip check passed and the rollback drops exactly orders.notes; open for human review."
+      },
+      "final": "GO"
+    }
+  ],
+  "outcome": {
+    "stopped_at": null,
+    "verdict": "GO",
+    "file": "migrations/0002_add_orders_notes.sql"
+  },
+  "expected": {
+    "stopped_at": null,
+    "verdict": "GO",
+    "file": "migrations/0002_add_orders_notes.sql"
+  },
+  "matched": true
+}

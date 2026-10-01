@@ -1,0 +1,1 @@
+{"status": "ok", "operation": "add_column", "table": "users", "column": "email", "type": "TEXT", "nullable": false, "default": null, "slug": "add_users_email", "request": "Add an email column to users, text, required.", "assumptions": []}

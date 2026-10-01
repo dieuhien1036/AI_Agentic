@@ -1,0 +1,49 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "verifier_verdict.schema.json",
+  "title": "Verdict from the migration-verifier subagent",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["migration_file", "verdict", "mechanical_check", "rule_checks", "issues", "summary"],
+  "properties": {
+    "migration_file": {"type": "string", "pattern": "^migrations/\\d{4}_[a-z0-9_]+\\.sql$"},
+    "verdict": {"enum": ["GO", "NO-GO"]},
+    "mechanical_check": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ran", "reversible", "failed_checks"],
+      "properties": {
+        "ran": {"type": "boolean"},
+        "reversible": {"type": "boolean"},
+        "failed_checks": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "rule_checks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["rule", "passed", "evidence"],
+        "properties": {
+          "rule": {"type": "string"},
+          "passed": {"type": "boolean"},
+          "evidence": {"type": "string"}
+        }
+      }
+    },
+    "issues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["severity", "message"],
+        "properties": {
+          "severity": {"enum": ["blocker", "warning"]},
+          "message": {"type": "string"}
+        }
+      }
+    },
+    "summary": {"type": "string", "minLength": 1}
+  }
+}

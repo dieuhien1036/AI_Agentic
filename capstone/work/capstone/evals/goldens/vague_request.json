@@ -1,0 +1,16 @@
+{
+  "id": "vague_request",
+  "primary": false,
+  "why": "No column name and no type: the parser must ask, not guess.",
+  "input": {
+    "request": "we need to track something new on users"
+  },
+  "expect": {
+    "status": "needs_clarification"
+  },
+  "min_questions": 2,
+  "prompt_must_contain": [
+    "needs_clarification",
+    "If none of these fits and no type was given, ask."
+  ]
+}

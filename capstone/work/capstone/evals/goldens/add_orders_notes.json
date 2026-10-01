@@ -1,0 +1,24 @@
+{
+  "id": "add_orders_notes",
+  "primary": true,
+  "why": "The headline demo request. Plain-English description, no SQL type given, nullability stated in words.",
+  "input": {
+    "request": "Add a notes column to the orders table so support can leave free-text comments on an order. It's optional."
+  },
+  "expect": {
+    "status": "ok",
+    "operation": "add_column",
+    "table": "orders",
+    "column": "notes",
+    "type": "TEXT",
+    "nullable": true,
+    "default": null,
+    "slug": "add_orders_notes"
+  },
+  "prompt_must_contain": [
+    "Return ONLY a single JSON object",
+    "free text / notes / comment / description → `TEXT`",
+    "\"optional\"",
+    "always `add_<table>_<column>`"
+  ]
+}

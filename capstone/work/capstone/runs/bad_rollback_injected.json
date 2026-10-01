@@ -1,0 +1,120 @@
+{
+  "case": "bad_rollback_injected",
+  "mode": "offline",
+  "request": null,
+  "stages": [
+    {
+      "stage": "verify",
+      "mechanical": {
+        "file": "C:/Users/FSC/AppData/Local/Temp/capstone_p9_n5wmo/migrations/0002_add_orders_priority.sql",
+        "checks": [
+          {
+            "name": "has_rollback_block",
+            "passed": true,
+            "detail": "1 rollback statement(s)"
+          },
+          {
+            "name": "forward_not_destructive",
+            "passed": true,
+            "detail": "none"
+          },
+          {
+            "name": "forward_supported",
+            "passed": true,
+            "detail": "1 statement(s) modelled"
+          },
+          {
+            "name": "forward_changes_schema",
+            "passed": true,
+            "detail": "+ orders.priority SMALLINT"
+          },
+          {
+            "name": "rollback_applies",
+            "passed": false,
+            "detail": "column 'priority_level' of relation 'orders' does not exist"
+          }
+        ],
+        "forward_diff": [
+          "+ orders.priority SMALLINT"
+        ],
+        "reversible": false
+      },
+      "verifier": {
+        "migration_file": "migrations/0002_add_orders_priority.sql",
+        "verdict": "NO-GO",
+        "mechanical_check": {
+          "ran": true,
+          "reversible": false,
+          "failed_checks": [
+            "rollback_applies"
+          ]
+        },
+        "rule_checks": [
+          {
+            "rule": "naming",
+            "passed": true,
+            "evidence": "0002_add_orders_priority.sql follows 0001"
+          },
+          {
+            "rule": "one_concern",
+            "passed": true,
+            "evidence": "single ADD COLUMN"
+          },
+          {
+            "rule": "rollback_exact",
+            "passed": false,
+            "evidence": "forward adds orders.priority but rollback drops orders.priority_level"
+          },
+          {
+            "rule": "idempotent_guards",
+            "passed": false,
+            "evidence": "ADD COLUMN priority has no IF NOT EXISTS; DROP COLUMN has no IF EXISTS"
+          },
+          {
+            "rule": "safe_on_live_table",
+            "passed": true,
+            "evidence": "SMALLINT, nullable"
+          },
+          {
+            "rule": "type_rules",
+            "passed": true,
+            "evidence": "SMALLINT is on the allowlist"
+          },
+          {
+            "rule": "no_destructive_forward",
+            "passed": true,
+            "evidence": "DROP only inside the ROLLBACK block"
+          },
+          {
+            "rule": "header_intact",
+            "passed": true,
+            "evidence": "header present"
+          }
+        ],
+        "issues": [
+          {
+            "severity": "blocker",
+            "message": "rollback drops priority_level, which does not exist; a revert would error and leave orders.priority in place"
+          },
+          {
+            "severity": "blocker",
+            "message": "missing IF [NOT] EXISTS guards: re-running either direction errors"
+          }
+        ],
+        "summary": "Not reversible: the rollback targets the wrong column. Regenerate with the generate-migration skill instead of hand-editing."
+      },
+      "final": "NO-GO"
+    }
+  ],
+  "outcome": {
+    "stopped_at": null,
+    "verdict": "NO-GO",
+    "file": "migrations/0002_add_orders_priority.sql"
+  },
+  "expected": {
+    "stopped_at": null,
+    "verdict": "NO-GO",
+    "file": "migrations/0002_add_orders_priority.sql"
+  },
+  "matched": true
+}

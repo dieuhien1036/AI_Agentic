@@ -1,0 +1,74 @@
+{
+  "case": "rubber_stamp_verifier",
+  "mode": "offline",
+  "request": null,
+  "stages": [
+    {
+      "stage": "verify",
+      "mechanical": {
+        "file": "C:/Users/FSC/AppData/Local/Temp/capstone_oyojcfwu/migrations/0002_add_orders_priority.sql",
+        "checks": [
+          {
+            "name": "has_rollback_block",
+            "passed": true,
+            "detail": "1 rollback statement(s)"
+          },
+          {
+            "name": "forward_not_destructive",
+            "passed": true,
+            "detail": "none"
+          },
+          {
+            "name": "forward_supported",
+            "passed": true,
+            "detail": "1 statement(s) modelled"
+          },
+          {
+            "name": "forward_changes_schema",
+            "passed": true,
+            "detail": "+ orders.priority SMALLINT"
+          },
+          {
+            "name": "rollback_applies",
+            "passed": false,
+            "detail": "column 'priority_level' of relation 'orders' does not exist"
+          }
+        ],
+        "forward_diff": [
+          "+ orders.priority SMALLINT"
+        ],
+        "reversible": false
+      },
+      "verifier": {
+        "migration_file": "migrations/0002_add_orders_priority.sql",
+        "verdict": "GO",
+        "mechanical_check": {
+          "ran": false,
+          "reversible": true,
+          "failed_checks": []
+        },
+        "rule_checks": [
+          {
+            "rule": "rollback_exact",
+            "passed": true,
+            "evidence": "rollback block present"
+          }
+        ],
+        "issues": [],
+        "summary": "SIMULATED rubber-stamp verifier output (deliberately wrong) to demonstrate that the driver's mechanical gate overrules a GO from the LLM."
+      },
+      "final": "NO-GO"
+    }
+  ],
+  "outcome": {
+    "stopped_at": null,
+    "verdict": "NO-GO",
+    "file": "migrations/0002_add_orders_priority.sql"
+  },
+  "expected": {
+    "stopped_at": null,
+    "verdict": "NO-GO",
+    "file": "migrations/0002_add_orders_priority.sql"
+  },
+  "matched": true
+}

@@ -1,0 +1,29 @@
+{
+  "issues": [
+    {
+      "severity": "blocker",
+      "category": "correctness",
+      "file": "migrations/0001_initial.sql",
+      "line": 25,
+      "message": "The diff edits an existing migration in place (adds refund_amount to the CREATE TABLE of orders). The file header says migrations are append-only and must not be edited by hand. Also, CREATE TABLE IF NOT EXISTS is a no-op on environments where orders already exists, so refund_amount will never be added there. Code that reads or writes refund_amount will then fail with 'column does not exist' on existing databases, while fresh databases get the column. This leaves schemas inconsistent across environments.",
+      "suggestion": "Revert the change to 0001_initial.sql. Add a new migration, e.g. migrations/0002_add_orders_refund_amount.sql, containing: ALTER TABLE orders ADD COLUMN IF NOT EXISTS refund_amount NUMERIC(12, 2) NOT NULL DEFAULT 0 CHECK (refund_amount >= 0 AND refund_amount <= total);"
+    },
+    {
+      "severity": "minor",
+      "category": "correctness",
+      "file": "migrations/0001_initial.sql",
+      "line": 25,
+      "message": "The new refund_amount column is nullable (DEFAULT 0 but no NOT NULL) and has no CHECK constraint. NULL values and negative or over-total refunds are possible, so the data is inconsistent with the total column, which has NOT NULL and CHECK (total >= 0).",
+      "suggestion": "Declare it NOT NULL DEFAULT 0 with CHECK (refund_amount >= 0 AND refund_amount <= total), in the new migration."
+    },
+    {
+      "severity": "minor",
+      "category": "testing",
+      "file": "migrations/0001_initial.sql",
+      "line": 25,
+      "message": "No test or migration check covers the schema change. The accompanying refund endpoint in routes.py overwrites order.total instead of using refund_amount, which suggests the new column is not yet wired in or verified.",
+      "suggestion": "Add a migration test that applies migrations in order on an existing database and checks that refund_amount exists with the expected constraints. Add a test that the refund flow populates refund_amount rather than mutating total."
+    }
+  ],
+  "summary": "The only change to this file adds a refund_amount column directly to the orders CREATE TABLE in 0001_initial.sql. This breaks the file's append-only rule: databases that already ran the migration never receive the column because of IF NOT EXISTS, so fresh and existing environments diverge. The change should be reverted and moved into a new numbered migration (ALTER TABLE ... ADD COLUMN). The new column should also be NOT NULL with a CHECK bounding it between 0 and total, and migration tests should cover it."
+}

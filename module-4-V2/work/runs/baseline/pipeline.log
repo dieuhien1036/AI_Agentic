@@ -1,0 +1,8 @@
+{"stage": "planner_start", "ts": 1790955893.6801093}
+{"stage": "planner_done", "ts": 1790955893.6801093, "files": 2}
+{"stage": "reviewers_start", "ts": 1790955893.6801093}
+{"stage": "reviewers_done", "ts": 1790955893.693378, "count": 2}
+{"stage": "aggregator_start", "ts": 1790955893.693378}
+{"stage": "aggregator_done", "ts": 1790955893.693378, "issues": 14}
+{"stage": "verifier_start", "ts": 1790955893.693378}
+{"stage": "verifier_done", "ts": 1790955893.693378, "verdict": "changes-requested"}

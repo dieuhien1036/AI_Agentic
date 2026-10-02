@@ -1,0 +1,21 @@
+{
+  "verdict": "changes-requested",
+  "false_positives": [],
+  "missed_issues": [
+    {
+      "severity": "blocker",
+      "category": "correctness",
+      "file": "app/orders/routes.py",
+      "line": 70,
+      "message": "refund_order sets order.status = \"refunded\", but OrderStatus in app/types.py only defines pending/paid/shipped/cancelled. The existing GET /orders handler maps every row through _row_to_order, which calls OrderStatus(row.status) (routes.py:29). That raises ValueError on 'refunded', so after a single refund, GET /orders?user_id=<owner> returns a 500 for that user permanently. This breaks an existing endpoint. The reviewer only said in a suggestion to 'add the value to the enum if it is missing'. It did not flag the regression or verify that the value is missing, and it is."
+    },
+    {
+      "severity": "minor",
+      "category": "correctness",
+      "file": "app/orders/routes.py",
+      "line": 64,
+      "message": "amount is a bare scalar parameter on a POST, so FastAPI reads it from the query string (?amount=...), not from a JSON body. This differs from the module's request-model pattern (CreateOrderRequest in app/types.py). Clients that send a JSON body get a 422."
+    }
+  ],
+  "reasoning": "I checked every reviewer claim against the base repo, and all of them hold. Neither new route has an auth dependency. order.total is overwritten even though the new refund_amount column is never mapped on OrderRow. 0001_initial.sql has an explicit append-only header, and its CREATE TABLE IF NOT EXISTS would be a no-op on existing databases. session.execute is given a raw string instead of text() or select(). The not-found case returns 200 when the module's pattern is HTTPException. The rest of the module uses Decimal for money. The module docstring requires types in app/types.py, integration tests, and no logic in handlers. I found no false positives. Two findings partly duplicate others: the migration-testing item repeats the migration blocker, and the nullable refund_amount item repeats its suggestion. Severities are reasonable. The reviewer missed the most concrete runtime regression. 'refunded' is not a valid OrderStatus value, so the refund endpoint corrupts reads for the existing list endpoint (500 on GET /orders for the affected user). This should be a blocker, not a footnote inside a suggestion. Minor point: amount binds as a query parameter, not a body. Given the four existing blockers plus this one, changes-requested is correct."
+}

@@ -1,0 +1,158 @@
+# Review verifier subagent
+
+## Role
+Một lượt thứ hai độc lập (independent second pass). Bạn KHÔNG thấy phần reasoning của reviewer, chỉ thấy
+output của nó và bản PR diff gốc. Hãy phán xét với đầu óc tươi mới (fresh).
+
+## Input
+`{"diff": "<patch>", "review": <review đã aggregate>, "repo_root": "<repo trước khi có PR>"}`
+
+## Procedure
+1. Đọc diff (và file gốc trong `repo_root` nếu cần context).
+2. Đọc bản review JSON đã được aggregate.
+3. Soi tìm hai thứ cụ thể:
+   - Issue mà reviewer khẳng định nhưng bạn không verify được trong code (false positive).
+   - Issue mà bạn thấy được trong code nhưng reviewer đã không flag (issue bị bỏ sót).
+4. Trả về verdict: approved | changes-requested.
+
+## Output schema
+```
+{
+  "verdict": "approved" | "changes-requested",
+  "false_positives": [<issue ids or descriptions>],
+  "missed_issues": [
+    {"severity": "...", "category": "...", "file": "...", "line": N, "message": "..."}
+  ],
+  "reasoning": "<one paragraph>"
+}
+```
+
+## Critical instruction
+Bạn có thể bị cám dỗ đóng dấu cho qua (rubber-stamp) vì output của reviewer nghe có vẻ hợp lý.
+Hãy push back (phản biện). Liệt kê ít nhất một issue bị bỏ sót HOẶC một false positive — hoặc, nếu
+thực sự không có cái nào, hãy nói thẳng ra như vậy kèm reasoning.
+
+## Task
+```json
+{
+  "diff": "diff --git a/app/orders/routes.py b/app/orders/routes.py\nindex 1234567..abcdef0 100644\n--- a/app/orders/routes.py\n+++ b/app/orders/routes.py\n@@ -42,3 +42,28 @@ async def list_orders(user_id: int,\n                       session: AsyncSession = Depends(get_session)) -> list[Order]:\n     rows = await list_orders_for_user(session, user_id=user_id)\n     return [_row_to_order(r) for r in rows]\n+\n+\n+@router.get(\"/admin/all\")\n+async def admin_list_all(session: AsyncSession = Depends(get_session)):\n+    \"\"\"Admin endpoint to list every order in the system.\"\"\"\n+    # Quick implementation; refine later\n+    sql = \"SELECT * FROM orders ORDER BY created_at DESC\"\n+    rows = (await session.execute(sql)).all()\n+    return [{\"id\": r.id, \"user_id\": r.user_id, \"items\": r.items,\n+             \"total\": float(r.total)} for r in rows]\n+\n+\n+@router.post(\"/{order_id}/refund\")\n+async def refund_order(order_id: int, amount: float,\n+                       session: AsyncSession = Depends(get_session)) -> dict:\n+    # Mark order refunded; set status\n+    order = await session.get(OrderRow, order_id)\n+    if not order:\n+        return {\"error\": \"not found\"}\n+    order.status = \"refunded\"\n+    order.total = amount  # update for accounting\n+    await session.commit()\n+    return {\"status\": \"ok\"}\ndiff --git a/migrations/0001_initial.sql b/migrations/0001_initial.sql\nindex aaaaaaa..bbbbbbb 100644\n--- a/migrations/0001_initial.sql\n+++ b/migrations/0001_initial.sql\n@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS orders (\n     items           JSONB NOT NULL,\n     status          VARCHAR(16) NOT NULL DEFAULT 'pending',\n     total           NUMERIC(12, 2) NOT NULL CHECK (total >= 0),\n+    refund_amount   NUMERIC(12, 2) DEFAULT 0,\n     created_at      TIMESTAMPTZ NOT NULL DEFAULT now()\n );\n\n",
+  "review": {
+    "issues": [
+      {
+        "severity": "blocker",
+        "category": "security",
+        "file": "app/orders/routes.py",
+        "line": 53,
+        "message": "The admin endpoint GET /admin/all has no authentication or authorization. Any caller can list every order in the system, including user_id and items (PII and business data).",
+        "suggestion": "Add an auth dependency that enforces an admin role (for example Depends(require_admin)). Add a test that a non-admin gets 401/403."
+      },
+      {
+        "severity": "blocker",
+        "category": "security",
+        "file": "app/orders/routes.py",
+        "line": 63,
+        "message": "POST /{order_id}/refund has no authentication or authorization. Anyone can refund any order and overwrite its total.",
+        "suggestion": "Require an authenticated admin or support role. Ideally also check that the caller is allowed to act on this order."
+      },
+      {
+        "severity": "blocker",
+        "category": "correctness",
+        "file": "app/orders/routes.py",
+        "line": 71,
+        "message": "The refund handler overwrites order.total with the refund amount. This destroys the original order total, so the accounting data is wrong. The migration adds a refund_amount column in this same PR, but it is never used. A refund amount larger than the total, or a negative one, is also accepted (a negative amount violates the CHECK (total >= 0) constraint and raises a 500).",
+        "suggestion": "Leave total unchanged. Set order.refund_amount = amount and order.status = 'refunded'. Validate 0 < amount <= total (for example with Decimal and Field(gt=0)). Also add refund_amount to OrderRow."
+      },
+      {
+        "severity": "blocker",
+        "category": "correctness",
+        "file": "migrations/0001_initial.sql",
+        "line": 25,
+        "message": "The diff edits an existing migration in place (adds refund_amount to the CREATE TABLE of orders). The file header says migrations are append-only and must not be edited by hand. Also, CREATE TABLE IF NOT EXISTS is a no-op on environments where orders already exists, so refund_amount will never be added there. Code that reads or writes refund_amount will then fail with 'column does not exist' on existing databases, while fresh databases get the column. This leaves schemas inconsistent across environments.",
+        "suggestion": "Revert the change to 0001_initial.sql. Add a new migration, e.g. migrations/0002_add_orders_refund_amount.sql, containing: ALTER TABLE orders ADD COLUMN IF NOT EXISTS refund_amount NUMERIC(12, 2) NOT NULL DEFAULT 0 CHECK (refund_amount >= 0 AND refund_amount <= total);"
+      },
+      {
+        "severity": "major",
+        "category": "correctness",
+        "file": "app/orders/routes.py",
+        "line": 57,
+        "message": "session.execute() is given a raw SQL string. In SQLAlchemy 2.x this raises ObjectNotExecutableError; it must be wrapped in text() or written as a select(). The endpoint will fail at runtime. It also uses SELECT * and has no LIMIT.",
+        "suggestion": "Use select(OrderRow).order_by(OrderRow.created_at.desc()).limit(...).offset(...) with (await session.execute(stmt)).scalars().all()."
+      },
+      {
+        "severity": "major",
+        "category": "correctness",
+        "file": "app/orders/routes.py",
+        "line": 69,
+        "message": "A missing order returns HTTP 200 with {\"error\": \"not found\"}. This contradicts the module's existing error pattern (HTTPException).",
+        "suggestion": "raise HTTPException(status_code=404, detail=\"order not found\")."
+      },
+      {
+        "severity": "major",
+        "category": "correctness",
+        "file": "app/orders/routes.py",
+        "line": 70,
+        "message": "The refund has no state checks and is not idempotent. An already refunded or cancelled order can be refunded again, and there is no concurrency control, so two simultaneous refunds can race.",
+        "suggestion": "Reject refunds for orders already in refunded/cancelled state (409). Use SELECT ... FOR UPDATE (with_for_update) or an atomic conditional UPDATE. Use OrderStatus.REFUNDED rather than a magic string, and add the value to the enum if it is missing."
+      },
+      {
+        "severity": "major",
+        "category": "correctness",
+        "file": "app/orders/routes.py",
+        "line": 65,
+        "message": "amount is typed as float, but money is Decimal elsewhere in this module and in the NUMERIC(12,2) column. This risks rounding errors. The /admin/all response also converts total with float(r.total).",
+        "suggestion": "Use Decimal for amount and total in request and response models."
+      },
+      {
+        "severity": "minor",
+        "category": "style",
+        "file": "app/orders/routes.py",
+        "line": 53,
+        "message": "The module docstring requires request/response models in app/types.py and no business logic in handlers. The new handlers have no response_model, return hand-built dicts, and put refund logic inline. They also skip the existing _row_to_order mapping. The '# Quick implementation; refine later' comment indicates unfinished work.",
+        "suggestion": "Define Refund request and response models in app/types.py. Move the refund logic into a function in repository.py or a sibling module. Use response_model=list[Order] and _row_to_order."
+      },
+      {
+        "severity": "minor",
+        "category": "performance",
+        "file": "app/orders/routes.py",
+        "line": 58,
+        "message": "The admin endpoint loads all orders in the system into memory with no pagination, which will degrade and eventually exhaust memory as the table grows.",
+        "suggestion": "Add limit/offset (or keyset) pagination parameters with a maximum page size."
+      },
+      {
+        "severity": "minor",
+        "category": "testing",
+        "file": "app/orders/routes.py",
+        "line": 53,
+        "message": "The module docstring requires an integration test under tests/integration/test_orders.py for every new endpoint. None is included in this PR for either endpoint (auth, 404, invalid amount, double refund, ordering).",
+        "suggestion": "Add integration tests covering the success path and the failure cases for both endpoints."
+      },
+      {
+        "severity": "minor",
+        "category": "correctness",
+        "file": "migrations/0001_initial.sql",
+        "line": 25,
+        "message": "The new refund_amount column is nullable (DEFAULT 0 but no NOT NULL) and has no CHECK constraint. NULL values and negative or over-total refunds are possible, so the data is inconsistent with the total column, which has NOT NULL and CHECK (total >= 0).",
+        "suggestion": "Declare it NOT NULL DEFAULT 0 with CHECK (refund_amount >= 0 AND refund_amount <= total), in the new migration."
+      },
+      {
+        "severity": "minor",
+        "category": "testing",
+        "file": "migrations/0001_initial.sql",
+        "line": 25,
+        "message": "No test or migration check covers the schema change. The accompanying refund endpoint in routes.py overwrites order.total instead of using refund_amount, which suggests the new column is not yet wired in or verified.",
+        "suggestion": "Add a migration test that applies migrations in order on an existing database and checks that refund_amount exists with the expected constraints. Add a test that the refund flow populates refund_amount rather than mutating total."
+      },
+      {
+        "severity": "nit",
+        "category": "style",
+        "file": "app/orders/routes.py",
+        "line": 66,
+        "message": "The comment '# Mark order refunded; set status' only restates the code, and the 'update for accounting' comment on the total line is misleading.",
+        "suggestion": "Remove it, or explain why the refund is recorded the way it is."
+      }
+    ],
+    "summary": "This PR is not mergeable: it has four blockers. The new admin listing (GET /admin/all, routes.py:53) and the refund endpoint (POST /{order_id}/refund, routes.py:63) are both unauthenticated, so anyone can read all orders or refund any order. The refund handler overwrites order.total instead of using the new refund_amount column and accepts negative or over-total amounts (routes.py:71). The migration change edits 0001_initial.sql in place, breaking the append-only rule, so existing databases never receive refund_amount and schemas diverge across environments; it should be reverted and moved into a new numbered migration that is NOT NULL with a CHECK bounding it between 0 and total. Major issues include a raw SQL string passed to session.execute (fails on SQLAlchemy 2.x), a 200 response for a missing order instead of a 404, no state or idempotency checks on refunds, and float used for money instead of Decimal. Minor issues cover missing pagination, missing integration and migration tests, and violations of module conventions (types in app/types.py, logic outside handlers)."
+  },
+  "repo_root": "../../module-1-2/starter/repo"
+}
+```

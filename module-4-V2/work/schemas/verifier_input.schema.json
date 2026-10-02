@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "VerifierTask",
+  "type": "object",
+  "required": [
+    "diff",
+    "review",
+    "repo_root"
+  ],
+  "properties": {
+    "diff": {
+      "type": "string"
+    },
+    "review": {
+      "$ref": "review.schema.json"
+    },
+    "repo_root": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

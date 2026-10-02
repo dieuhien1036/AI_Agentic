@@ -1,0 +1,36 @@
+{
+  "task": {
+    "file": "migrations/0001_initial.sql",
+    "diff": "diff --git a/app/orders/routes.py b/app/orders/routes.py\nindex 1234567..abcdef0 100644\n--- a/app/orders/routes.py\n+++ b/app/orders/routes.py\n@@ -42,3 +42,28 @@ async def list_orders(user_id: int,\n                       session: AsyncSession = Depends(get_session)) -> list[Order]:\n     rows = await list_orders_for_user(session, user_id=user_id)\n     return [_row_to_order(r) for r in rows]\n+\n+\n+@router.get(\"/admin/all\")\n+async def admin_list_all(session: AsyncSession = Depends(get_session)):\n+    \"\"\"Admin endpoint to list every order in the system.\"\"\"\n+    # Quick implementation; refine later\n+    sql = \"SELECT * FROM orders ORDER BY created_at DESC\"\n+    rows = (await session.execute(sql)).all()\n+    return [{\"id\": r.id, \"user_id\": r.user_id, \"items\": r.items,\n+             \"total\": float(r.total)} for r in rows]\n+\n+\n+@router.post(\"/{order_id}/refund\")\n+async def refund_order(order_id: int, amount: float,\n+                       session: AsyncSession = Depends(get_session)) -> dict:\n+    # Mark order refunded; set status\n+    order = await session.get(OrderRow, order_id)\n+    if not order:\n+        return {\"error\": \"not found\"}\n+    order.status = \"refunded\"\n+    order.total = amount  # update for accounting\n+    await session.commit()\n+    return {\"status\": \"ok\"}\ndiff --git a/migrations/0001_initial.sql b/migrations/0001_initial.sql\nindex aaaaaaa..bbbbbbb 100644\n--- a/migrations/0001_initial.sql\n+++ b/migrations/0001_initial.sql\n@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS orders (\n     items           JSONB NOT NULL,\n     status          VARCHAR(16) NOT NULL DEFAULT 'pending',\n     total           NUMERIC(12, 2) NOT NULL CHECK (total >= 0),\n+    refund_amount   NUMERIC(12, 2) DEFAULT 0,\n     created_at      TIMESTAMPTZ NOT NULL DEFAULT now()\n );\n\n",
+    "repo_root": "../../module-1-2/starter/repo"
+  },
+  "output": {
+    "issues": [
+      {
+        "severity": "blocker",
+        "category": "correctness",
+        "file": "migrations/0001_initial.sql",
+        "line": 25,
+        "message": "The diff edits an existing migration in place (adds refund_amount to the CREATE TABLE of orders). The file header says migrations are append-only and must not be edited by hand. Also, CREATE TABLE IF NOT EXISTS is a no-op on environments where orders already exists, so refund_amount will never be added there. Code that reads or writes refund_amount will then fail with 'column does not exist' on existing databases, while fresh databases get the column. This leaves schemas inconsistent across environments.",
+        "suggestion": "Revert the change to 0001_initial.sql. Add a new migration, e.g. migrations/0002_add_orders_refund_amount.sql, containing: ALTER TABLE orders ADD COLUMN IF NOT EXISTS refund_amount NUMERIC(12, 2) NOT NULL DEFAULT 0 CHECK (refund_amount >= 0 AND refund_amount <= total);"
+      },
+      {
+        "severity": "minor",
+        "category": "correctness",
+        "file": "migrations/0001_initial.sql",
+        "line": 25,
+        "message": "The new refund_amount column is nullable (DEFAULT 0 but no NOT NULL) and has no CHECK constraint. NULL values and negative or over-total refunds are possible, so the data is inconsistent with the total column, which has NOT NULL and CHECK (total >= 0).",
+        "suggestion": "Declare it NOT NULL DEFAULT 0 with CHECK (refund_amount >= 0 AND refund_amount <= total), in the new migration."
+      },
+      {
+        "severity": "minor",
+        "category": "testing",
+        "file": "migrations/0001_initial.sql",
+        "line": 25,
+        "message": "No test or migration check covers the schema change. The accompanying refund endpoint in routes.py overwrites order.total instead of using refund_amount, which suggests the new column is not yet wired in or verified.",
+        "suggestion": "Add a migration test that applies migrations in order on an existing database and checks that refund_amount exists with the expected constraints. Add a test that the refund flow populates refund_amount rather than mutating total."
+      }
+    ],
+    "summary": "The only change to this file adds a refund_amount column directly to the orders CREATE TABLE in 0001_initial.sql. This breaks the file's append-only rule: databases that already ran the migration never receive the column because of IF NOT EXISTS, so fresh and existing environments diverge. The change should be reverted and moved into a new numbered migration (ALTER TABLE ... ADD COLUMN). The new column should also be NOT NULL with a CHECK bounding it between 0 and total, and migration tests should cover it."
+  }
+}

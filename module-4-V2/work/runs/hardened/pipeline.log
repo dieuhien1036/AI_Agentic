@@ -1,0 +1,13 @@
+{"stage": "planner_start", "ts": 1790956220.4648438}
+{"stage": "validated", "ts": 1790956220.4648438, "subagent": "pr-planner", "attempts": 1}
+{"stage": "planner_done", "ts": 1790956220.4648438, "files": 2}
+{"stage": "reviewers_start", "ts": 1790956220.4648438}
+{"stage": "validated", "ts": 1790956220.4804664, "subagent": "file-reviewer__app_orders_routes_py", "attempts": 1}
+{"stage": "validated", "ts": 1790956220.4804664, "subagent": "file-reviewer__migrations_0001_initial_sql", "attempts": 1}
+{"stage": "reviewers_done", "ts": 1790956220.4804664, "count": 2}
+{"stage": "aggregator_start", "ts": 1790956220.4804664}
+{"stage": "validated", "ts": 1790956220.4960923, "subagent": "review-aggregator", "attempts": 1}
+{"stage": "aggregator_done", "ts": 1790956220.4960923, "issues": 14}
+{"stage": "verifier_start", "ts": 1790956220.4960923}
+{"stage": "validated", "ts": 1790956220.4960923, "subagent": "review-verifier", "attempts": 1}
+{"stage": "verifier_done", "ts": 1790956220.4960923, "verdict": "changes-requested"}
